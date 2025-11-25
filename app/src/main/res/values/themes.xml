@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.MonApplication" parent="Theme.Material3.DayNight.NoActionBar" />
+        <!-- Le parent est Theme.Material3.DayNight, qui hérite de AppCompat -->
+        <style name="Theme.MonApplication2" parent="Theme.Material3.DayNight.NoActionBar">
+            <!-- Personnalisation du thème ici -->
+        </style>
+</resources>
