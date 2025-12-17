@@ -59,12 +59,9 @@ dependencies {
     implementation(libs.litert.support.api)
     implementation(libs.play.services.tasks)
     implementation(libs.play.services.gcm)
-    //noinspection UseTomlInstead
-    implementation("androidx.compose.material:material-icons-extended:1.5.0")
-
-    implementation("androidx.navigation:navigation-compose:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
-    implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

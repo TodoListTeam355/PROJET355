@@ -1,15 +1,15 @@
 package com.example.monapplication
 
-import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.os.LocaleList
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,27 +20,34 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerState
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.getSelectedDate
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,27 +55,34 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.monapplication.composables.MonApplicationTheme
-import java.text.SimpleDateFormat
+import androidx.compose.ui.window.Dialog
+import com.example.monapplication.ui.theme.MonApplicationTheme
+import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 class MainActivity2 : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
-           MonApplicationTheme {
-               SecondActivityScreen()
+            // Logique pour déterminer le thème, déplacée ici
+            val useDarkTheme = if (intent.hasExtra("IS_DARK_THEME")) {
+                intent.getBooleanExtra("IS_DARK_THEME", false)
+            } else {
+                isSystemInDarkTheme()
+            }
+
+            MonApplicationTheme(darkTheme = useDarkTheme) {
+               SecondActivityScreen(onClose = { this.finish() })
             }
         }
     }
@@ -77,37 +91,52 @@ class MainActivity2 : AppCompatActivity() {
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun  SecondActivityScreen() {
+fun  SecondActivityScreen(onClose: () -> Unit) {
     var text by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var selectedTime by remember { mutableStateOf(LocalTime.now()) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
     var addMoreText by remember { mutableStateOf("") }
-    var categoryText by remember { mutableStateOf("") }
 
-    var datePickerFormatter= SimpleDateFormat("dd/MM/yy", Locale.getDefault())
-    val datePickerState= rememberDatePickerState()
-    val showDatePickerState by remember { mutableStateOf(false
-    )}
+    val categories = getTaskCategories()
+    var selectedCategory by remember { mutableStateOf(categories[0]) }
+    var isCategoryMenuExpanded by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState()
+    val timePickerState = rememberTimePickerState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
-            .background(Color.White),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .verticalScroll(rememberScrollState()) // Rendre la colonne défilable
     ) {
-        // Titre au centre - Exemple avec clickable
-        Text(
-            text = "Nouvelle Activity",
-            style = MaterialTheme.typography.headlineMedium,
+        // Titre à gauche, en gras, avec icône de fermeture
+        Row(
             modifier = Modifier
-                .padding(vertical = 32.dp)
-                .clickable {
-                    // Action quand on clique sur le titre
-                    println("Titre cliqué!")
-                }
-        )
+                .fillMaxWidth()
+                .padding(top = 16.dp, bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Nouvelle Activity",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = onClose) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Fermer l'interface",
+                    tint = Color.Gray
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Zone de texte avec placeholder
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -129,87 +158,82 @@ fun  SecondActivityScreen() {
                     }
                 },
                 singleLine = false,
-                textStyle = TextStyle(fontSize = 16.sp)
+                textStyle = TextStyle(fontSize = 16.sp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Section Calendrier - Exemple avec clickable
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = "Sélectionnez une date",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            // Container cliquable pour le calendrier
+        // Section Calendrier et Heure
+        Row(modifier = Modifier.fillMaxWidth()) {
+            // Champ Date
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .clickable { showDatePicker = true },
                 shape = MaterialTheme.shapes.small,
                 color = MaterialTheme.colorScheme.surface,
-                border = ButtonDefaults.outlinedButtonBorder
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true)
             ) {
                 Row(
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
-
                 ) {
                     Icon(
                         imageVector = Icons.Default.DateRange,
                         contentDescription = "Calendrier",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
+                        tint = Color.Gray
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(selectedDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
-
-
-
-
+                    Text(
+                        text = selectedDate.format(DateTimeFormatter.ofPattern("dd/MM/yy")),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
-
             }
 
-//            val preferredLocales = LocaleList.forLanguageTags("fr")
-//            val config = Configuration()
-//            config.setLocales(preferredLocales)
-//            val newContext = LocalContext.current.createConfigurationContext(config)
-//            CompositionLocalProvider(
-//                LocalContext provides newContext,
-//                LocalConfiguration provides config,
-//                LocalLayoutDirection provides LayoutDirection.Rtl,
-//            ) {
-//                Column(
-//                    modifier = Modifier.verticalScroll(rememberScrollState()),
-//                    verticalArrangement = Arrangement.spacedBy(8.dp),
-//                ) {
-//                    // Pre-select a date for January 4, 2020
-//                    // Initialize date picker with the preferred locale. Here we create a state directly,
-//                    // but since the Locale was set at the CompositionLocalProvider through a Configuration,
-//                    // a `val datePickerState = rememberDatePickerState(...)` will have the same effect.
-//                    val datePickerState = remember {
-//                        DatePickerState(
-//                            initialSelectedDate = LocalDate.of(2020, 1, 4),
-//                            // Set to "HE" locale.
-//                            locale = preferredLocales.get(0),
-//                        )
-//                    }
-//                    DatePicker(state = datePickerState, modifier = Modifier.padding(16.dp))
-//
-//                    Text(
-//                        "Selected date: ${datePickerState.getSelectedDate() ?: "no selection"}",
-//                        modifier = Modifier.align(Alignment.CenterHorizontally),
-//                    )
-//                }
-//            }
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Champ Heure
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { showTimePicker = true },
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.surface,
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AccessTime,
+                        contentDescription = "Heure",
+                        modifier = Modifier.size(20.dp),
+                        tint = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
         }
 
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Section "Add More" et "Category"
         Column(
@@ -224,42 +248,97 @@ fun  SecondActivityScreen() {
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = "Add More"
+                        contentDescription = "Add More",
+                        tint = Color.Gray
                     )
                 },
                 placeholder = {
                     Text("Add More")
-                }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
 
-            // Zone Category
-            OutlinedTextField(
-                value = categoryText,
-                onValueChange = { categoryText = it },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.Category,
-                        contentDescription = "Category"
+            // Menu déroulant pour la catégorie
+            ExposedDropdownMenuBox(
+                expanded = isCategoryMenuExpanded,
+                onExpandedChange = { isCategoryMenuExpanded = !isCategoryMenuExpanded }
+            ) {
+                OutlinedTextField(
+                    value = selectedCategory.name,
+                    onValueChange = { _ -> },
+                    readOnly = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Category,
+                            contentDescription = "Category",
+                            tint = Color.Gray
+                        )
+                    },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCategoryMenuExpanded)
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface
                     )
-                },
-                placeholder = {
-                    Text("Category")
+                )
+                ExposedDropdownMenu(
+                    expanded = isCategoryMenuExpanded,
+                    onDismissRequest = { isCategoryMenuExpanded = false },
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                ) {
+                    categories.forEach { category ->
+                        DropdownMenuItem(
+                            text = { Text(category.name) },
+                            onClick = {
+                                selectedCategory = category
+                                isCategoryMenuExpanded = false
+                            }
+                        )
+                    }
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp)) // Espace avant le bouton
+
+        // Bouton placé dans le flux de la page
+        Button(
+            onClick = { /* Action à définir */ },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Text(
+                text = "Crée la tâche",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onPrimary
             )
         }
     }
 
-    // Date Picker Dialog
+    // Calendrier
     if (showDatePicker) {
-        // Implémentation basique du DatePicker
-        AlertDialog(
+        DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
-            title = { Text("Sélectionnez une date") },
-            text = { Text("Ici vous pouvez intégrer un vrai DatePicker") },
             confirmButton = {
                 TextButton(
-                    onClick = { showDatePicker = false }
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                        }
+                        showDatePicker = false
+                    }
                 ) {
                     Text("OK")
                 }
@@ -271,7 +350,59 @@ fun  SecondActivityScreen() {
                     Text("Annuler")
                 }
             }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // Sélecteur d'heure
+    if (showTimePicker) {
+        TimePickerDialog(
+            onDismissRequest = { showTimePicker = false },
+            onConfirm = {
+                selectedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                showTimePicker = false
+            },
+            content = {
+                TimePicker(state = timePickerState)
+            }
         )
+    }
+}
+
+@Composable
+fun TimePickerDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                content()
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismissRequest) {
+                        Text("Annuler")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = onConfirm) {
+                        Text("OK")
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -280,7 +411,6 @@ fun  SecondActivityScreen() {
 @Composable
 fun GreetingPreview() {
     MonApplicationTheme {
-      //  Greeting("Android")
-        SecondActivityScreen()
+        SecondActivityScreen(onClose = {})
     }
 }

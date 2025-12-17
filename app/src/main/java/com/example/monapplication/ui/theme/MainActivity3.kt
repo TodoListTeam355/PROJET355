@@ -44,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -167,6 +168,7 @@ fun TaskDetailsScreen(
                 .fillMaxSize()
                 .background(Color(0xFFF8F9FA))
                 .padding(paddingValues)
+
         ) {
             // Header avec catégorie
             Box(
@@ -174,6 +176,7 @@ fun TaskDetailsScreen(
                     .fillMaxWidth()
                     .background(Color(0xFF5F7DF7))
                     .padding(horizontal = 24.dp, vertical = 32.dp)
+
             ) {
                 Column {
                     Box(
@@ -209,7 +212,7 @@ fun TaskDetailsScreen(
 
             // Liste des tâches
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize() .clip(RoundedCornerShape(199.dp)),
                 contentPadding = PaddingValues(16.dp)
             ) {
                 // Tâches en retard

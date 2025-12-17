@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,6 +33,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -54,8 +56,16 @@ class MainActivity3 : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val categoryName = intent.getStringExtra("CATEGORY_NAME") ?: "Tasks"
+
         setContent {
-            MonApplicationTheme {
+            // Logique pour déterminer le thème, déplacée ici
+            val useDarkTheme = if (intent.hasExtra("IS_DARK_THEME")) {
+                intent.getBooleanExtra("IS_DARK_THEME", false)
+            } else {
+                isSystemInDarkTheme()
+            }
+
+            MonApplicationTheme(darkTheme = useDarkTheme) {
                 TaskDetailsScreen(
                     categoryName = categoryName,
                     onBackClick = { finish() },
@@ -129,7 +139,7 @@ fun TaskDetailsScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 },
@@ -138,20 +148,20 @@ fun TaskDetailsScreen(
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "More",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF5F7DF7)
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddTaskClick,
-                containerColor = Color(0xFF5F7DF7),
-                contentColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(56.dp)
             ) {
                 Icon(
@@ -165,14 +175,14 @@ fun TaskDetailsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
         ) {
             // Header avec catégorie
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF5F7DF7))
+                    .background(MaterialTheme.colorScheme.primary)
                     .padding(horizontal = 24.dp, vertical = 32.dp)
             ) {
                 Column {
@@ -180,7 +190,7 @@ fun TaskDetailsScreen(
                         modifier = Modifier
                             .size(48.dp)
                             .background(
-                                color = Color.White.copy(alpha = 0.2f),
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
                                 shape = RoundedCornerShape(12.dp)
                             ),
                         contentAlignment = Alignment.Center
@@ -188,7 +198,7 @@ fun TaskDetailsScreen(
                         Icon(
                             imageVector = Icons.Default.List,
                             contentDescription = categoryName,
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -197,12 +207,12 @@ fun TaskDetailsScreen(
                         text = categoryName,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
                         text = "${tasks.size} Tasks",
                         fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                     )
                 }
             }
@@ -218,7 +228,7 @@ fun TaskDetailsScreen(
                         text = "Late",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF95A5A6),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
@@ -233,7 +243,7 @@ fun TaskDetailsScreen(
                         text = "Today",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF95A5A6),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 8.dp, horizontal = 0.dp)
                     )
                 }
@@ -248,7 +258,7 @@ fun TaskDetailsScreen(
                         text = "Done",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF95A5A6),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
@@ -271,7 +281,7 @@ fun TaskItem(task: Task) {
             .padding(vertical = 6.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 1.dp
@@ -290,21 +300,21 @@ fun TaskItem(task: Task) {
                     text = task.title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (isChecked) Color(0xFF95A5A6) else Color(0xFF2C3E50)
+                    color = if (isChecked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                 )
                 if (task.time.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = task.time,
                         fontSize = 13.sp,
-                        color = Color(0xFFFF6B6B)
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
                 if (task.date.isNotEmpty() && task.date != "Done") {
                     Text(
                         text = task.date,
                         fontSize = 12.sp,
-                        color = Color(0xFF95A5A6)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -313,8 +323,8 @@ fun TaskItem(task: Task) {
                 checked = isChecked,
                 onCheckedChange = { isChecked = it },
                 colors = CheckboxDefaults.colors(
-                    checkedColor = Color(0xFF5F7DF7),
-                    uncheckedColor = Color(0xFFDDE2E5)
+                    checkedColor = MaterialTheme.colorScheme.primary,
+                    uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }

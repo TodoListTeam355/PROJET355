@@ -1,12 +1,12 @@
 package com.example.monapplication.composables
 
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,29 +29,33 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumTopAppBar
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.monapplication.MainActivity2
-import com.example.monapplication.MainActivity3
+import com.example.monapplication.ui.theme.MonApplicationTheme
+import kotlinx.coroutines.launch
 
 data class TaskCategory(
     val icon: ImageVector,
@@ -63,135 +67,149 @@ data class TaskCategory(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListsScreen() {
-    val context = LocalContext.current
-    val categories = listOf(
-        TaskCategory(
-            icon = Icons.Default.List,
-            name = "All",
-            taskCount = 23,
-            iconColor = Color(0xFF5F7DF7),
-            backgroundColor = Color(0xFFE8ECFF)
-        ),
-        TaskCategory(
-            icon = Icons.Default.Work,
-            name = "Work",
-            taskCount = 14,
-            iconColor = Color(0xFFFF9F43),
-            backgroundColor = Color(0xFFFFF3E6)
-        ),
-        TaskCategory(
-            icon = Icons.Default.Headphones,
-            name = "Music",
-            taskCount = 6,
-            iconColor = Color(0xFFFF6B6B),
-            backgroundColor = Color(0xFFFFE8E8)
-        ),
-        TaskCategory(
-            icon = Icons.Default.Flight,
-            name = "Travel",
-            taskCount = 1,
-            iconColor = Color(0xFF4ECB71),
-            backgroundColor = Color(0xFFE6F9ED)
-        ),
-        TaskCategory(
-            icon = Icons.Default.School,
-            name = "Study",
-            taskCount = 2,
-            iconColor = Color(0xFF5F7DF7),
-            backgroundColor = Color(0xFFE8ECFF)
-        ),
-        TaskCategory(
-            icon = Icons.Default.Home,
-            name = "Home",
-            taskCount = 14,
-            iconColor = Color(0xFFFF6B6B),
-            backgroundColor = Color(0xFFFFE8E8)
-        ),
-        TaskCategory(
-            icon = Icons.Default.Palette,
-            name = "Art",
-            taskCount = 0,
-            iconColor = Color(0xFFAB7DF7),
-            backgroundColor = Color(0xFFF3E8FF)
-        ),
-        TaskCategory(
-            icon = Icons.Default.ShoppingCart,
-            name = "Shopping",
-            taskCount = 0,
-            iconColor = Color(0xFF4ECBDC),
-            backgroundColor = Color(0xFFE6F9FC)
-        )
-    )
+fun ListsScreen(
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit,
+    onAddTaskClick: () -> Unit,
+    onCategoryClick: (String) -> Unit
+) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val primaryContainerColor = MaterialTheme.colorScheme.primaryContainer
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val secondaryContainerColor = MaterialTheme.colorScheme.secondaryContainer
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+    val tertiaryContainerColor = MaterialTheme.colorScheme.tertiaryContainer
+    val errorColor = MaterialTheme.colorScheme.error
+    val errorContainerColor = MaterialTheme.colorScheme.errorContainer
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Lists",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2C3E50)
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Menu",
-                            tint = Color(0xFF2C3E50)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
+    val categories = remember {
+        listOf(
+            TaskCategory(
+                icon = Icons.Default.List,
+                name = "All",
+                taskCount = 23,
+                iconColor = primaryColor,
+                backgroundColor = primaryContainerColor
+            ),
+            TaskCategory(
+                icon = Icons.Default.Work,
+                name = "Work",
+                taskCount = 14,
+                iconColor = secondaryColor,
+                backgroundColor = secondaryContainerColor
+            ),
+            TaskCategory(
+                icon = Icons.Default.Headphones,
+                name = "Music",
+                taskCount = 6,
+                iconColor = tertiaryColor,
+                backgroundColor = tertiaryContainerColor
+            ),
+            TaskCategory(
+                icon = Icons.Default.Flight,
+                name = "Travel",
+                taskCount = 1,
+                iconColor = Color(0xFF4ECB71),
+                backgroundColor = Color(0xFFE6F9ED)
+            ),
+            TaskCategory(
+                icon = Icons.Default.School,
+                name = "Study",
+                taskCount = 2,
+                iconColor = primaryColor,
+                backgroundColor = primaryContainerColor
+            ),
+            TaskCategory(
+                icon = Icons.Default.Home,
+                name = "Home",
+                taskCount = 14,
+                iconColor = errorColor,
+                backgroundColor = errorContainerColor
+            ),
+            TaskCategory(
+                icon = Icons.Default.Palette,
+                name = "Art",
+                taskCount = 0,
+                iconColor = Color(0xFFAB7DF7),
+                backgroundColor = Color(0xFFF3E8FF)
+            ),
+            TaskCategory(
+                icon = Icons.Default.ShoppingCart,
+                name = "Shopping",
+                taskCount = 0,
+                iconColor = Color(0xFF4ECBDC),
+                backgroundColor = Color(0xFFE6F9FC)
             )
-        },
-        floatingActionButton = {
+        )
+    }
 
-            FloatingActionButton(
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
-                onClick = {
-
-
-                    val intent = Intent(context, MainActivity2::class.java)
-                    context.startActivity(intent)
-
-
-
-                     },
-                containerColor = Color(0xFF5F7DF7),
-                contentColor = Color.White,
-                modifier = Modifier.size(56.dp).clip(RoundedCornerShape(99.dp))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
-                    modifier = Modifier.size(28.dp)
-                )
-            }
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DrawerContent(
+                isDarkTheme = isDarkTheme,
+                onThemeChange = onThemeChange,
+                onCloseDrawer = {
+                    scope.launch { drawerState.close() }
+                }
+            )
         }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
+    ) {
+        Scaffold(
+            topBar = {
+                 MediumTopAppBar(
 
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(paddingValues)
-        ) {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(123.dp),
-                contentPadding = PaddingValues(36.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    title = { Text("Lists") },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu"
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = onAddTaskClick,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(99.dp))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add",
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(paddingValues)
             ) {
-                items(categories) { category ->
-                    CategoryCard(category = category) {
-                        val intent = Intent(context, MainActivity3::class.java)
-                        intent.putExtra("CATEGORY_NAME", category.name)
-                        context.startActivity(intent)
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(123.dp),
+                    contentPadding = PaddingValues(36.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(categories) { category ->
+                        CategoryCard(category = category) {
+                            onCategoryClick(category.name)
+                        }
                     }
                 }
             }
@@ -203,13 +221,12 @@ fun ListsScreen() {
 fun CategoryCard(category: TaskCategory, onClick: () -> Unit) {
     Card(
         modifier = Modifier
-            .shadow(30.dp,RoundedCornerShape(99.dp),false)
             .fillMaxWidth()
             .height(130.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
@@ -245,12 +262,12 @@ fun CategoryCard(category: TaskCategory, onClick: () -> Unit) {
                     text = category.name,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF2C3E50)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${category.taskCount} Tasks",
                     fontSize = 13.sp,
-                    color = Color(0xFF95A5A6)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -260,7 +277,7 @@ fun CategoryCard(category: TaskCategory, onClick: () -> Unit) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ListsScreenPreview() {
-    MaterialTheme {
-        ListsScreen()
+    MonApplicationTheme {
+        ListsScreen(isDarkTheme = false, onThemeChange = {}, onAddTaskClick = {}, onCategoryClick = {})
     }
 }
