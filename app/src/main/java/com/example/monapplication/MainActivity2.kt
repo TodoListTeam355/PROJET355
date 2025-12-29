@@ -1,80 +1,51 @@
 package com.example.monapplication
-
 import android.os.Build
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.monapplication.data.entity.Category
+import com.example.monapplication.data.entity.Task
 import com.example.monapplication.ui.theme.MonApplicationTheme
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.ZoneId
+import com.example.monapplication.utils.IconMapper
+import com.example.monapplication.viewModel.TodoViewModel
+import com.example.monapplication.viewModel.TodoViewModelFactory
+import java.time.*
 import java.time.format.DateTimeFormatter
 
-class MainActivity2 : AppCompatActivity() {
+class MainActivity2 : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            // Logique pour déterminer le thème, déplacée ici
+            val application = applicationContext as TodoApplication
+            val viewModel: TodoViewModel = viewModel(
+                factory = TodoViewModelFactory(application.repository)
+            )
+
+            val categories by viewModel.allCategories.collectAsState()
+
             val useDarkTheme = if (intent.hasExtra("IS_DARK_THEME")) {
                 intent.getBooleanExtra("IS_DARK_THEME", false)
             } else {
@@ -82,7 +53,14 @@ class MainActivity2 : AppCompatActivity() {
             }
 
             MonApplicationTheme(darkTheme = useDarkTheme) {
-               SecondActivityScreen(onClose = { this.finish() })
+                SecondActivityScreen(
+                    categories = categories,
+                    onSaveTask = { task ->
+                        viewModel.insertTask(task)
+                        finish()
+                    },
+                    onClose = { finish() }
+                )
             }
         }
     }
@@ -91,7 +69,11 @@ class MainActivity2 : AppCompatActivity() {
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun  SecondActivityScreen(onClose: () -> Unit) {
+fun SecondActivityScreen(
+    categories: List<Category>,
+    onSaveTask: (Task) -> Unit,
+    onClose: () -> Unit
+) {
     var text by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var selectedTime by remember { mutableStateOf(LocalTime.now()) }
@@ -99,9 +81,14 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
     var showTimePicker by remember { mutableStateOf(false) }
     var addMoreText by remember { mutableStateOf("") }
 
-    val categories = getTaskCategories()
-    var selectedCategory by remember { mutableStateOf(categories[0]) }
+    var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var isCategoryMenuExpanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(categories) {
+        if (selectedCategory == null && categories.isNotEmpty()) {
+            selectedCategory = categories.first()
+        }
+    }
 
     val datePickerState = rememberDatePickerState()
     val timePickerState = rememberTimePickerState()
@@ -111,9 +98,8 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
-            .verticalScroll(rememberScrollState()) // Rendre la colonne défilable
+            .verticalScroll(rememberScrollState())
     ) {
-        // Titre à gauche, en gras, avec icône de fermeture
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -121,7 +107,7 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Nouvelle Activity",
+                text = "Nouvelle Tache",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -130,7 +116,7 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
             IconButton(onClick = onClose) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Fermer l'interface",
+                    contentDescription = "Fermer",
                     tint = Color.Gray
                 )
             }
@@ -138,7 +124,6 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Zone de texte avec placeholder
         Column(modifier = Modifier.fillMaxWidth()) {
             if (text.isNotEmpty()) {
                 Text(
@@ -150,7 +135,7 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
 
             OutlinedTextField(
                 value = text,
-                onValueChange = { text = it},
+                onValueChange = { text = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
                     if (text.isEmpty()) {
@@ -161,18 +146,14 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
                 textStyle = TextStyle(fontSize = 16.sp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Section Calendrier et Heure
         Row(modifier = Modifier.fillMaxWidth()) {
-            // Champ Date
             Surface(
                 modifier = Modifier
                     .weight(1f)
@@ -203,7 +184,6 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Champ Heure
             Surface(
                 modifier = Modifier
                     .weight(1f)
@@ -235,12 +215,10 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Section "Add More" et "Category"
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Zone Add More
             OutlinedTextField(
                 value = addMoreText,
                 onValueChange = { addMoreText = it },
@@ -252,110 +230,113 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
                         tint = Color.Gray
                     )
                 },
-                placeholder = {
-                    Text("Add More")
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                placeholder = { Text("Add description") }
             )
 
-            // Menu déroulant pour la catégorie
-            ExposedDropdownMenuBox(
-                expanded = isCategoryMenuExpanded,
-                onExpandedChange = { isCategoryMenuExpanded = !isCategoryMenuExpanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedCategory.name,
-                    onValueChange = { _ -> },
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.Category,
-                            contentDescription = "Category",
-                            tint = Color.Gray
-                        )
-                    },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCategoryMenuExpanded)
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface
-                    )
-                )
-                ExposedDropdownMenu(
+            if (categories.isNotEmpty()) {
+                ExposedDropdownMenuBox(
                     expanded = isCategoryMenuExpanded,
-                    onDismissRequest = { isCategoryMenuExpanded = false },
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    onExpandedChange = { isCategoryMenuExpanded = !isCategoryMenuExpanded }
                 ) {
-                    categories.forEach { category ->
-                        DropdownMenuItem(
-                            text = { Text(category.name) },
-                            onClick = {
-                                selectedCategory = category
-                                isCategoryMenuExpanded = false
+                    OutlinedTextField(
+                        value = selectedCategory?.name ?: "Select category",
+                        onValueChange = { },
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        leadingIcon = {
+                            selectedCategory?.let { category ->
+                                Icon(
+                                    imageVector = IconMapper.getIconByName(category.icon),
+                                    contentDescription = category.name,
+                                    tint = Color(category.iconColor)
+                                )
                             }
-                        )
+                        },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCategoryMenuExpanded)
+                        }
+                    )
+                    ExposedDropdownMenu(
+                        expanded = isCategoryMenuExpanded,
+                        onDismissRequest = { isCategoryMenuExpanded = false }
+                    ) {
+                        categories.forEach { category ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = IconMapper.getIconByName(category.icon),
+                                            contentDescription = category.name,
+                                            tint = Color(category.iconColor),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(category.name)
+                                    }
+                                },
+                                onClick = {
+                                    selectedCategory = category
+                                    isCategoryMenuExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp)) // Espace avant le bouton
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // Bouton placé dans le flux de la page
         Button(
-            onClick = { /* Action à définir */ },
+            onClick = {
+                if (text.isNotBlank() && selectedCategory != null) {
+                    val dateTime = LocalDateTime.of(selectedDate, selectedTime)
+                    val timestamp = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+                    val task = Task(
+                        title = text,
+                        time = selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                        date = selectedDate.format(DateTimeFormatter.ofPattern("dd/MM/yy")),
+                        dueDate = timestamp,
+                        isCompleted = false,
+                        categoryId = selectedCategory!!.id
+                    )
+                    onSaveTask(task)
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            enabled = text.isNotBlank() && selectedCategory != null
         ) {
-            Text(
-                text = "Crée la tâche",
-                fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
+            Text("Créer la tâche", fontSize = 18.sp)
         }
     }
 
-    // Calendrier
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
-                        }
-                        showDatePicker = false
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        selectedDate = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
                     }
-                ) {
-                    Text("OK")
-                }
+                    showDatePicker = false
+                }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { showDatePicker = false }
-                ) {
-                    Text("Annuler")
-                }
+                TextButton(onClick = { showDatePicker = false }) { Text("Annuler") }
             }
         ) {
             DatePicker(state = datePickerState)
         }
     }
 
-    // Sélecteur d'heure
     if (showTimePicker) {
         TimePickerDialog(
             onDismissRequest = { showTimePicker = false },
@@ -363,9 +344,7 @@ fun  SecondActivityScreen(onClose: () -> Unit) {
                 selectedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
                 showTimePicker = false
             },
-            content = {
-                TimePicker(state = timePickerState)
-            }
+            content = { TimePicker(state = timePickerState) }
         )
     }
 }
@@ -393,24 +372,16 @@ fun TimePickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismissRequest) {
-                        Text("Annuler")
-                    }
+                    TextButton(onClick = onDismissRequest) { Text("Annuler") }
                     Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(onClick = onConfirm) {
-                        Text("OK")
-                    }
+                    TextButton(onClick = onConfirm) { Text("OK") }
                 }
             }
         }
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MonApplicationTheme {
-        SecondActivityScreen(onClose = {})
-    }
-}
+
+
+
+
