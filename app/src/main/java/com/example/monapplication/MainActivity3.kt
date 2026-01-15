@@ -1,6 +1,7 @@
 package com.example.monapplication
 
 import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -82,10 +83,12 @@ fun TaskDetailsScreen(
     onBackClick: () -> Unit,
     onAddTaskClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val tasks by viewModel.tasksForSelectedCategory.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
-    var selectedTask by remember { mutableStateOf<Task?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var taskToDelete by remember { mutableStateOf<Task?>(null) }
+
 
     val lateTasks = remember(tasks) {
         tasks.filter { task ->
@@ -279,144 +282,221 @@ fun TaskDetailsScreen(
                     contentPadding = PaddingValues(16.dp)
                 ) {
                     if (lateTasks.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Late",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
+                            item {
+                                Text(
+                                    text = "Late",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+
+                            items(items = lateTasks, key = { it.id }) { task ->
+                                TaskItem(
+                                    task = task,
+                                    onCheckedChange = { isChecked ->
+                                        viewModel.toggleTaskCompletion(task.id, isChecked)
+                                    },
+                                    onEditClick = {
+                                        val intent = Intent(context, MainActivity4::class.java).apply {
+                                            putExtra("TASK_ID", task.id)
+                                            putExtra("TASK_TITLE", task.title)
+                                            putExtra("TASK_TIME", task.time)
+                                            putExtra("TASK_DATE", task.date)
+                                            putExtra("TASK_DUE_DATE", task.dueDate)
+                                            putExtra("TASK_CATEGORY_ID", task.categoryId)
+                                            putExtra("TASK_IS_COMPLETED", task.isCompleted)
+                                        }
+                                        context.startActivity(intent)
+                                    },
+                                    onDeleteClick = {
+                                        taskToDelete = task
+                                    }
+                                )
+                            }
                         }
 
-                        items(items = lateTasks, key = { it.id }) { task ->
-                            TaskItem(
-                                task = task,
-                                onCheckedChange = { isChecked ->
-                                    viewModel.toggleTaskCompletion(task.id, isChecked)
-                                },
-                                onTaskLongClick = { selectedTask = task }
-                            )
-                        }
-                    }
+                        if (todayTasks.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Today",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
 
-                    if (todayTasks.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Today",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
-                        }
-
-                        items(items = todayTasks, key = { it.id }) { task ->
-                            TaskItem(
-                                task = task,
-                                onCheckedChange = { isChecked ->
-                                    viewModel.toggleTaskCompletion(task.id, isChecked)
-                                },
-                                onTaskLongClick = { selectedTask = task }
-                            )
-                        }
-                    }
-
-                    if (completedTasks.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Done",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
+                            items(items = todayTasks, key = { it.id }) { task ->
+                                TaskItem(
+                                    task = task,
+                                    onCheckedChange = { isChecked ->
+                                        viewModel.toggleTaskCompletion(task.id, isChecked)
+                                    },
+                                    onEditClick = {
+                                        val intent = Intent(context, MainActivity4::class.java).apply {
+                                            putExtra("TASK_ID", task.id)
+                                            putExtra("TASK_TITLE", task.title)
+                                            putExtra("TASK_TIME", task.time)
+                                            putExtra("TASK_DATE", task.date)
+                                            putExtra("TASK_DUE_DATE", task.dueDate)
+                                            putExtra("TASK_CATEGORY_ID", task.categoryId)
+                                            putExtra("TASK_IS_COMPLETED", task.isCompleted)
+                                        }
+                                        context.startActivity(intent)
+                                    },
+                                    onDeleteClick = {
+                                        taskToDelete = task
+                                    }
+                                )
+                            }
                         }
 
-                        items(items = completedTasks, key = { it.id }) { task ->
-                            TaskItem(
-                                task = task,
-                                onCheckedChange = { isChecked ->
-                                    viewModel.toggleTaskCompletion(task.id, isChecked)
-                                },
-                                onTaskLongClick = { selectedTask = task }
-                            )
+                        if (completedTasks.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Done",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+
+                            items(items = completedTasks, key = { it.id }) { task ->
+                                TaskItem(
+                                    task = task,
+                                    onCheckedChange = { isChecked ->
+                                        viewModel.toggleTaskCompletion(task.id, isChecked)
+                                    },
+                                    onEditClick = {
+                                        val intent = Intent(context, MainActivity4::class.java).apply {
+                                            putExtra("TASK_ID", task.id)
+                                            putExtra("TASK_TITLE", task.title)
+                                            putExtra("TASK_TIME", task.time)
+                                            putExtra("TASK_DATE", task.date)
+                                            putExtra("TASK_DUE_DATE", task.dueDate)
+                                            putExtra("TASK_CATEGORY_ID", task.categoryId)
+                                            putExtra("TASK_IS_COMPLETED", task.isCompleted)
+                                        }
+                                        context.startActivity(intent)
+                                    },
+                                    onDeleteClick = {
+                                        taskToDelete = task
+                                    }
+                                )
+                            }
                         }
+
+
                     }
                 }
             }
+        // À la fin du Scaffold, ajouter le dialog de suppression
+        taskToDelete?.let { task ->
+            AlertDialog(
+                onDismissRequest = { taskToDelete = null },
+                icon = {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
+                title = { Text("Delete Task?") },
+                text = { Text("Are you sure you want to delete \"${task.title}\"? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.deleteTask(task)
+                            taskToDelete = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { taskToDelete = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
         }
     }
 
     // Dialog de confirmation pour supprimer toutes les tâches
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            icon = {
-                Icon(
-                    Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-            },
-            title = { Text("Delete all tasks?") },
-            text = { Text("This action cannot be undone. All ${tasks.size} tasks will be permanently deleted.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        tasks.forEach { task ->
-                            viewModel.deleteTask(task)
-                        }
-                        showDeleteDialog = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
+//    if (showDeleteDialog) {
+//        AlertDialog(
+//            onDismissRequest = { showDeleteDialog = false },
+//            icon = {
+//                Icon(
+//                    Icons.Default.Warning,
+//                    contentDescription = null,
+//                    tint = MaterialTheme.colorScheme.error
+//                )
+//            },
+//            title = { Text("Delete all tasks?") },
+//            text = { Text("This action cannot be undone. All ${tasks.size} tasks will be permanently deleted.") },
+//            confirmButton = {
+//                TextButton(
+//                    onClick = {
+//                        tasks.forEach { task ->
+//                            viewModel.deleteTask(task)
+//                        }
+//                        showDeleteDialog = false
+//                    },
+//                    colors = ButtonDefaults.textButtonColors(
+//                        contentColor = MaterialTheme.colorScheme.error
+//                    )
+//                ) {
+//                    Text("Delete")
+//                }
+//            },
+//            dismissButton = {
+//                TextButton(onClick = { showDeleteDialog = false }) {
+//                    Text("Cancel")
+//                }
+//            }
+//        )
+//    }
+//
+//    // Menu contextuel pour une tâche spécifique
+//    selectedTask?.let { task ->
+//        TaskContextMenu(
+//            task = task,
+//            onDismiss = { selectedTask = null },
+//            onDelete = {
+//                viewModel.deleteTask(task)
+//                selectedTask = null
+//            },
+//            onToggleComplete = {
+//                viewModel.toggleTaskCompletion(task.id, !task.isCompleted)
+//                selectedTask = null
+//            }
+//        )
+//    }
 
-    // Menu contextuel pour une tâche spécifique
-    selectedTask?.let { task ->
-        TaskContextMenu(
-            task = task,
-            onDismiss = { selectedTask = null },
-            onDelete = {
-                viewModel.deleteTask(task)
-                selectedTask = null
-            },
-            onToggleComplete = {
-                viewModel.toggleTaskCompletion(task.id, !task.isCompleted)
-                selectedTask = null
-            }
-        )
-    }
-}
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TaskItem(
     task: Task,
     onCheckedChange: (Boolean) -> Unit,
-    onTaskLongClick: () -> Unit
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     var isChecked by remember(task.isCompleted) { mutableStateOf(task.isCompleted) }
+    var showMenu by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            .combinedClickable(
-                onClick = { },
-                onLongClick = { onTaskLongClick() }
-            ),
+            .padding(vertical = 6.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -448,13 +528,13 @@ fun TaskItem(
                             imageVector = Icons.Default.AccessTime,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.error
+                            tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = task.time,
                             fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -467,21 +547,53 @@ fun TaskItem(
                 }
             }
 
-            Checkbox(
-                checked = isChecked,
-                onCheckedChange = { checked ->
-                    isChecked = checked
-                    onCheckedChange(checked)
-                },
-                colors = CheckboxDefaults.colors(
-                    checkedColor = MaterialTheme.colorScheme.primary,
-                    uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+            // Boutons d'action
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Bouton Edit
+                IconButton(
+                    onClick = onEditClick,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // Bouton Delete
+                IconButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // Checkbox
+                Checkbox(
+                    checked = isChecked,
+                    onCheckedChange = { checked ->
+                        isChecked = checked
+                        onCheckedChange(checked)
+                    },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = MaterialTheme.colorScheme.primary,
+                        uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
-            )
+            }
         }
     }
 }
-
 
 @Composable
 fun TaskContextMenu(

@@ -31,6 +31,10 @@ xmlns:tools="http://schemas.android.com/tools">
         android:name=".MainActivity3"
         android:exported="false"
         android:theme="@style/Theme.MonApplication" />
+    <activity
+        android:name=".MainActivity4"
+        android:exported="false"
+        android:theme="@style/Theme.MonApplication" />
 </application>
 
 </manifest>
