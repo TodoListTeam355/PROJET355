@@ -6,62 +6,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Backup
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -126,7 +85,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(
     categories: List<Category>,
     isDarkMode: Boolean,
-    preferencesManager: PreferencesManager,
+    preferencesManager: PreferencesManager?,
     onCategoryClick: (Category) -> Unit,
     onAddClick: () -> Unit
 ) {
@@ -136,15 +95,19 @@ fun MainScreen(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            NavigationDrawerContent(
-                isDarkMode = isDarkMode,
-                preferencesManager = preferencesManager,
-                onCloseDrawer = {
-                    scope.launch {
-                        drawerState.close()
+            if (preferencesManager != null) {
+                NavigationDrawerContent(
+                    isDarkMode = isDarkMode,
+                    preferencesManager = preferencesManager,
+                    onCloseDrawer = {
+                        scope.launch {
+                            drawerState.close()
+                        }
                     }
-                }
-            )
+                )
+            } else {
+                ModalDrawerSheet { Text("Drawer Preview") }
+            }
         }
     ) {
         CategoriesScreen(
@@ -172,21 +135,20 @@ fun CategoriesScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Box(modifier=Modifier.fillMaxSize().padding(horizontal =12.dp)){
-                       Row(modifier=Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                           Text(
-                               "Lists",
-                               fontSize = 34.sp,
-                               fontWeight = FontWeight.Bold
-                           )
-                            IconButton(onClick = onMenuClick) {
-                                Icon(Icons.Default.Menu, contentDescription = "Menu")
-                            }
-
-
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(end = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            "Lists",
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(onClick = onMenuClick) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu")
                         }
                     }
-
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -238,15 +200,26 @@ fun CategoryCard(
     category: Category,
     onClick: () -> Unit
 ) {
+    val isDark = isSystemInDarkTheme()
+    
+    // On adapte la couleur de fond en mode sombre pour que le texte blanc soit lisible
+    val containerColor = if (isDark) {
+        MaterialTheme.colorScheme.surfaceVariant
+    } else {
+        Color(category.backgroundColor)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .clickable { onClick() },
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(category.backgroundColor)
-        )
+            containerColor = containerColor,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -275,8 +248,7 @@ fun CategoryCard(
                 Text(
                     text = category.name,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "${category.taskCount} Tasks",
@@ -507,7 +479,6 @@ fun NavigationDrawerContent(
                 label = { Text("Statistics") },
                 selected = false,
                 onClick = {
-                    // TODO: Navigate to statistics
                     onCloseDrawer()
                 }
             )
@@ -518,7 +489,6 @@ fun NavigationDrawerContent(
                 label = { Text("Backup & Restore") },
                 selected = false,
                 onClick = {
-                    // TODO: Navigate to backup
                     onCloseDrawer()
                 }
             )
@@ -540,10 +510,48 @@ fun NavigationDrawerContent(
                 },
                 selected = false,
                 onClick = {
-                    // TODO: Show about dialog
                     onCloseDrawer()
                 }
             )
         }
+    }
+}
+
+// PREVIEWS
+@Preview(showBackground = true)
+@Composable
+fun CategoryCardPreview() {
+    MonApplicationTheme {
+        CategoryCard(
+            category = Category(
+                id = 1,
+                name = "All",
+                icon = "list",
+                iconColor = 0xFF6C63FF,
+                backgroundColor = 0xFFFFFFFF,
+                taskCount = 5
+            ),
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showSystemUi = true)
+@Composable
+fun MainScreenPreview() {
+    val sampleCategories = listOf(
+        Category(1, "All", "list", 0xFF6C63FF, 0xFFFFFFFF, 5),
+        Category(2, "Work", "work", 0xFFFFA500, 0xFFFFF9F0, 3),
+        Category(3, "Personal", "person", 0xFF4CAF50, 0xFFF1F8F1, 8),
+        Category(4, "Shopping", "shopping_cart", 0xFFE91E63, 0xFFFDF2F5, 2)
+    )
+    MonApplicationTheme {
+        MainScreen(
+            categories = sampleCategories,
+            isDarkMode = false,
+            preferencesManager = null,
+            onCategoryClick = {},
+            onAddClick = {}
+        )
     }
 }
